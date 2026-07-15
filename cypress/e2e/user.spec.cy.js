@@ -1,12 +1,13 @@
 import userData from '../fixtures/user-data.json'
+import LoginPage from '../pages/loginpage.js'
+
+const loginPage = new LoginPage()
+
 describe('Orange HRM Tests', () => {
+   
   const selectorsList = { 
-    usernameField: "[name='username']",
-    passwordField: '[name="password"]',
-    loginButton: '.oxd-button',
     sectionTitleTopBar: ':nth-child(8) > .oxd-main-menu-item',
     dashboardGrid: ".orangehrm-dashboard-grid",
-    wrongCredentialAlert: '.oxd-alert',
     myInfoButton: '[href="/web/index.php/pim/viewMyDetails"]',
     firstNameField: "[name='firstName']",
     middleName: "[name='middleName']",
@@ -14,31 +15,32 @@ describe('Orange HRM Tests', () => {
     genericFiel: ".oxd-input--active",
     dataField: "[placeholder='yyyy-mm-dd']",
     dateCloseButton: ".--close",
-    submitButton: "[type='submit']"
+    submitButton: "[type='submit']",
+    nationalityField: ".oxd-select-text-input"
   }
    
   it.only('User Infor Update - Success', () => {
-    cy.visit('/auth/login')
-    cy.get(selectorsList.usernameField).type(userData.userSuccess.username)
-    cy.get(selectorsList.passwordField).type(userData.userSuccess.password)
-    cy.get(selectorsList.loginButton).click()
+    loginPage.accessLoginPage()
+    loginPage.loginWithUser(userData.userSuccess.username, userData.userSuccess.password)
     cy.location('pathname').should('equal', '/web/index.php/dashboard/index')
     cy.get(selectorsList.dashboardGrid)
     cy.get(selectorsList.myInfoButton).click ()
     cy.url().should('include', '/pim/viewPersonalDetails')
-    cy.get(selectorsList.firstNameField).clear().type('Novo Nome')
-    cy.get(selectorsList.middleName).clear().type('Novo MiddleName')
-    cy.get(selectorsList.lastNameField).clear().type('Novo Apelido')
-    cy.get(selectorsList.genericFiel).eq(3).clear().type('NicknameT')
-    cy.get(selectorsList.genericFiel).eq(4).clear().type('Employee')
-    cy.get(selectorsList.genericFiel).eq(5).clear().type('OtherIdTest')
-    cy.get(selectorsList.genericFiel).eq(6).clear().type('DriversLicenseTest')
-    cy.get(selectorsList.genericFiel).eq(7).clear().type('2026-07-14')
+    cy.get(selectorsList.usernameField, { timeout: 15000 }).type(userData.userSuccess.username)
+    cy.get(selectorsList.middleName).should('be.visible').clear({force: true}).type('Novo MiddleName', {force: true})
+    cy.get(selectorsList.lastNameField).should('be.visible').clear({force: true}).type('Novo Apelido', {force: true})
+    cy.get(selectorsList.genericFiel).eq(6).should('be.visible').clear({force: true}).type('NicknameT', {force: true})
+    cy.get(selectorsList.genericFiel).eq(3).should('be.visible').clear({force: true}).type('Employee', {force: true})
+    cy.get(selectorsList.genericFiel).eq(4).should('be.visible').clear({force: true}).type('OtherIdTest', {force: true})
+    cy.get(selectorsList.genericFiel).eq(5).should('be.visible').clear({force: true}).type('DriversLicenseTest', {force: true})
+    cy.get(selectorsList.genericFiel).eq(6).should('be.visible').clear({force: true}).type('15072026', {force: true})
     cy.get(selectorsList.dateCloseButton).click()
-    cy.get(selectorsList.genericFiel).eq(8).clear().type('ssnNumberTest')
-    cy.get(selectorsList.genericFiel).eq(9).clear().type('sinNumberTest')
+    cy.contains('.oxd-input-group', 'Nationality').find('.oxd-select-text-input').click()
+    cy.contains('.oxd-select-option', 'Brazil').click() 
+    cy.contains('.oxd-input-group', 'Marital Status').find('.oxd-select-text-input').click()
+    cy.contains('.oxd-select-option', 'Single').click()
     cy.get(selectorsList.submitButton).eq(0).click()
-    cy.get('body').should('contain', 'Successfully Updated')
+    cy.get('.oxd-toast', { timeout: 15000 }).should('contain', 'Successfully Updated')
     cy.get('.oxd-toast')
   })
 it('Login - Fail', () => {
