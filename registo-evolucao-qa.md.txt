@@ -1,0 +1,128 @@
+# Registo de Evolução — QA / Cypress
+
+Log pessoal de problemas reais encontrados e resolvidos, para três fins:
+1. Acompanhar a minha evolução técnica ao longo do curso.
+2. Ter uma referência rápida para não repetir o mesmo erro duas vezes.
+3. Conseguir explicar o meu trabalho com clareza a um colega ou numa entrevista.
+
+---
+
+## Como preencher uma entrada nova
+
+Copia este bloco para cada problema novo que resolveres:
+
+```markdown
+## [DD/MM/AAAA] — Título curto do problema
+
+**Contexto:** o que estava a tentar fazer.
+
+**Problema:** o erro ou sintoma exato (cola a mensagem, se fizer sentido).
+
+**Investigação:** o que testei/verifiquei para perceber a causa.
+
+**Causa raiz:** o que estava realmente errado (não confundir com o sintoma).
+
+**Solução:** o que mudei para resolver.
+
+**Aprendizagem:** o que levo daqui para não repetir o erro.
+```
+
+**Dica para entrevistas:** este formato já segue a lógica de perguntas comportamentais tipo "conta-me sobre um problema técnico que resolveste" — contexto, o que fizeste, resultado. Ao preencheres aqui, já estás a preparar a resposta.
+
+---
+
+## Exemplos reais desta sessão (já preenchidos)
+
+## 20/07/2026 — Campos sem atributo único no OrangeHRM
+
+**Contexto:** a tentar construir seletores Cypress fiáveis para o formulário Personal Details.
+
+**Problema:** vários campos (Employee Id, Driver's License, License Expiry Date) não tinham `name` nem `id`, só uma classe genérica partilhada por dezenas de elementos.
+
+**Investigação:** usei o inspetor do browser e `Ctrl+F` dentro do painel Elements para contar quantas vezes cada atributo aparecia na página. Confirmei que a classe repetia 10 vezes e o placeholder 2 vezes — nenhum dos dois era único sozinho.
+
+**Causa raiz:** o site não fornece identificadores únicos para a maioria dos campos deste formulário.
+
+**Solução:** defini uma ordem de prioridade de seletores (atributo único → label + `cy.contains().find()` → índice `.eq()` como último recurso) e apliquei-a caso a caso.
+
+**Aprendizagem:** não existe "o seletor certo" universal — existe uma hierarquia de robustez, e escolher bem exige perceber o que está realmente disponível no DOM antes de escrever código.
+
+---
+
+## 20/07/2026 — Atributo `xpath="1"` falso, injetado por extensão
+
+**Contexto:** a tentar perceber que atributo usar para um campo de data.
+
+**Problema:** via um atributo `xpath="1"` no inspetor que parecia útil, mas não sabia se era do site ou de uma ferramenta.
+
+**Investigação:** desativei a extensão de inspeção de seletores em `chrome://extensions` e recarreguei a página — o atributo desapareceu.
+
+**Causa raiz:** a extensão instalada estava a injetar atributos falsos no DOM só para ajuda visual; não existiam no HTML real do site.
+
+**Solução:** ignorei esse atributo e usei uma estratégia baseada em atributos reais do site.
+
+**Aprendizagem:** nunca confiar num atributo "estranho" sem confirmar a origem — testar desativando a ferramenta é rápido e definitivo.
+
+---
+
+## 20/07/2026 — Erro "elemento coberto por outro elemento"
+
+**Contexto:** teste a tentar limpar e escrever num campo de data.
+
+**Problema:** `cy.clear()` falhava com "this element is being covered by another element" — um calendário/dropdown sobrepunha o campo.
+
+**Investigação:** percebi que era um erro do sistema de "actionability checks" do Cypress — verifica se o elemento está mesmo clicável na posição real, não só se existe no HTML.
+
+**Causa raiz:** um componente da página (calendário, cabeçalho fixo) ficava visualmente por cima do campo no momento da ação.
+
+**Solução:** usei `{force: true}` como solução pragmática depois de confirmar (por tentativa) que não era um bloqueio real de interação, apenas um falso positivo da verificação.
+
+**Aprendizagem:** perceber a *categoria* do erro (timing vs. estrutura vs. seletor) poupa muito tempo de tentativa-erro — cada categoria tem uma solução diferente.
+
+---
+
+## 20/07/2026 — Bug de índices trocados (`.eq()`)
+
+**Contexto:** a preencher vários campos com `.eq(indice)` sobre um seletor genérico partilhado.
+
+**Problema:** os valores apareciam nos campos errados (ex: texto do "Nickname" a aparecer no campo "Employee Id").
+
+**Investigação:** comparei, campo a campo, o valor que o teste tentou escrever com o valor que realmente apareceu no ecrã, e reconstruí o mapeamento real de índices.
+
+**Causa raiz:** o campo "Nickname" (que eu assumia existir) não existe nesta configuração do site — isso desalinhava todos os índices seguintes em uma posição.
+
+**Solução:** corrigi o mapeamento de índices com base na evidência real (o que realmente apareceu em cada campo), em vez de assumir a ordem.
+
+**Aprendizagem:** seletores por índice são frágeis exatamente por isto — qualquer mudança na quantidade de elementos anteriores desalinha tudo o que vem a seguir.
+
+---
+
+## 20/07/2026 — `.gitignore` não estava a funcionar (CRLF vs LF)
+
+**Contexto:** a tentar impedir que `node_modules` e `package-lock.json` fossem enviados para o GitHub.
+
+**Problema:** mesmo com o `.gitignore` com o conteúdo certo, `git status` continuava a mostrar `package-lock.json` como ficheiro por rastrear.
+
+**Investigação:** usei `git check-ignore -v package-lock.json`, que devolveu vazio — confirmando que o ficheiro não estava a ser reconhecido pelo padrão do `.gitignore`.
+
+**Causa raiz:** o ficheiro `.gitignore` estava guardado com quebras de linha `CRLF` (padrão Windows) em vez de `LF`, o que acrescentava um caracter invisível ao fim de cada linha e impedia a correspondência exata do nome do ficheiro.
+
+**Solução:** mudei a codificação de quebra de linha do ficheiro para `LF` no VS Code e voltei a testar.
+
+**Aprendizagem:** quando uma configuração "parece certa" mas não funciona, vale a pena verificar a codificação/formato do ficheiro, não só o conteúdo visível.
+
+---
+
+## 20/07/2026 — Push recusado com erro 403 (permissões Git)
+
+**Contexto:** a tentar enviar (`git push`) um commit para o repositório de exemplo fornecido pelo professor.
+
+**Problema:** `remote: Permission ... denied ... 403`.
+
+**Investigação:** percebi que o repositório pertencia à organização/professor, não à minha conta — eu tinha clonado, mas não tinha permissão de escrita.
+
+**Causa raiz:** faltava um fork (cópia própria do repositório) antes de tentar contribuir.
+
+**Solução:** criei um fork na minha conta GitHub, redirecionei o `remote origin` local para o meu fork, e voltei a fazer push com sucesso.
+
+**Aprendizagem:** este é o fluxo real de contribuição em open source e em muitas empresas — fork, branch, commit, pull request. Já pratiquei o ciclo completo.
